@@ -15,7 +15,7 @@ const resolvers = {
         users: async () => getRestUsersList(),
         todos: () => todosList,
         todo: (parent, args, context, info) => todoById(parent, args, context, info),
-        user: (parent, args, context, info) => userById(parent, args, context, info),
+        user: async (id) => getRestUserById(id),
     }
 }
 function todoById(parent, args, context, info){
@@ -40,7 +40,20 @@ async function getRestUsersList(){
         throw error
     }
 }
-
+async function getRestUserById(id){
+    try {
+        const user = await axios.get("https://jsonplaceholder.typicode.com/users/${id}")
+        console.log(user)
+        return user.data.map(({ id, name, email, username }) => ({
+            id: id,
+            name: name,
+            email: email,
+            login: username,
+        }))
+    } catch (error) {
+        throw error
+    }
+}
 const server = new GraphQLServer({
     typeDefs: './src/schema.graphql',
     resolvers,
