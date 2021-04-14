@@ -1,21 +1,17 @@
 const axios = require("axios")
 const { GraphQLServer } = require('graphql-yoga');
 const resolvers = {
-    User:{
-        todos: (parent, args, context, info) => {
-            return todosList.filter(t => t.user_id == parent.id);
-        }
+    User: {
+        todos: async (parent, args, context, info) => getTodoListForUser(parent.id)
     },
-    ToDoItem:{
-        user: (parent, args, context, info) => {
-            return usersList.find(u => u.id == parent.user_id);
-        }
+    ToDoItem: {
+        user: async (parent, args, context, info) => getRestUserById(parent.user_id)
     },
     Query: {
         users: async () => getRestUsersList(),
-        todos: () => todosList,
-        todo: (parent, args, context, info) => todoById(parent, args, context, info),
-        user: async (id) => getRestUserById(id),
+        todos: async () => getTodoList(),
+        todo: async(parent, args, context, info) => getTodoById(parent, args, context, info),
+        user: async (parent, args, context, info) => getRestUserById(args.id),
     }
 }
 function todoById(parent, args, context, info){
@@ -25,6 +21,34 @@ function userById(parent, args, context, info){
     return usersList.find(u => u.id == args.id);
 }
 
+async function getTodoListForUser(id){
+    try {
+        const todos = await axios.get(`https://jsonplaceholder.typicode.com/users/${id}/todos`)
+        console.log(todos);
+        return todos.data.map(({ userId, id, title, completed }) => ({
+            id: id,
+            title: title,
+            completed: completed,
+            user_id: userId,
+        }))
+    } catch (error) {
+        throw error
+    }
+}
+async function getTodoListForUser(id){
+    try {
+        const todos = await axios.get(`https://jsonplaceholder.typicode.com/users/${id}/todos`)
+        console.log(todos);
+        return todos.data.map(({ userId, id, title, completed }) => ({
+            id: id,
+            title: title,
+            completed: completed,
+            user_id: userId,
+        }))
+    } catch (error) {
+        throw error
+    }
+}
 // async function -> replace user list with real data from REST Api
 async function getRestUsersList(){
     try {
@@ -40,16 +64,36 @@ async function getRestUsersList(){
         throw error
     }
 }
+async function getTodoList(){
+    try {
+        const todos = await axios.get("https://jsonplaceholder.typicode.com/todos")
+        console.log(todos);
+        return todos.data.map(({ userId, id, title, completed }) => ({
+            id: id,
+            title: title,
+            completed: completed,
+            user_id: userId,
+        }))
+    } catch (error) {
+        throw error
+    }
+}
+async function getTodoById(parent, args, context, info){
+    try {
+        const id = args.id
+        const todo = await axios.get(`https://jsonplaceholder.typicode.com/todos/${id}`)
+        console.log(todo)
+        return (({id, title, completed, userId}) => ({id, title, completed, user_id: userId}))(todo.data)
+
+    } catch (error) {
+        throw error
+    }
+}
 async function getRestUserById(id){
     try {
-        const user = await axios.get("https://jsonplaceholder.typicode.com/users/${id}")
+        const user = await axios.get(`https://jsonplaceholder.typicode.com/users/${id}`)
         console.log(user)
-        return user.data.map(({ id, name, email, username }) => ({
-            id: id,
-            name: name,
-            email: email,
-            login: username,
-        }))
+        return (({ id, name, email, username }) => ({ id, name, email, login: username }))(user.data)
     } catch (error) {
         throw error
     }
